@@ -1,0 +1,36 @@
+{
+    "lists": [
+        {
+            "listType": "ads",
+            "url": "https://v.firebog.net/hosts/AdguardDNS.txt",
+            "type": "directDomains"
+        }
+        ,
+        {
+            "listType": "ads",
+            "url": "https://adaway.org/hosts.txt",
+            "type": "hostfile"
+        },
+        {
+            "listType": "ads",
+            "url": "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://v.firebog.net/hosts/Easyprivacy.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://hostfiles.frogeye.fr/firstparty-trackers-hosts.txt",
+            "type": "hostfile"
+        },
+        {
+            "listType": "ads",
+            "url": "https://v.firebog.net/hosts/Easylist.txt",
+            "type": "directDomains"
+        }
+        
+    ]
+}
