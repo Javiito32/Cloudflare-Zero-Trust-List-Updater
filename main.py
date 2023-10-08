@@ -59,35 +59,47 @@ try:
 
     cloudflareLists = CloudflareLists(cloudflareAPI)
     cloudflareRules = CloudflareRules(cloudflareAPI)
+    print("Cloudflare API initialized")
 
 
     adBlockingRule = cloudflareRules.getAdblockingRule()
     adBlockingRuleId = adBlockingRule['id']
+    print("Cloudflare Adblocking rule initialized")
 
     # Clear the rule before deleting the lists
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule)
+    print("Cloudflare Adblocking rule cleared")
 
     lists = cloudflareLists.getLists()
+    print("Cloudflare lists initialized")
 
     counter = 0
+    print("Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
         for list in lists:
             if list['name'].startswith('adlist_'):
                 cloudflareLists.deleteList(list['id'])
+        print("Cloudflare lists deleted")
+    else:
+        print("Cloudflare lists not found, skipping...")
 
 
     listsIds = []
     errorLists = []
 
     counter = 0
+    print("Creating Cloudflare lists")
     for chunk in chunks:
         try:
             listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id'])
         except Exception as e:
             errorLists.append((chunks.index(chunk), str(e)))
+            print("Error creating list " + str(chunks.index(chunk)))
             pass
-        
+    print("Cloudflare lists created")
+
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule, listsIds)
+    print("Cloudflare Adblocking rule updated")
 
     if len(errorLists) > 0:
 
@@ -119,11 +131,14 @@ try:
             "username": "✅ Cloudflare Adblockers"
         }))
 
+    print("Done!")
+
 except Exception as e:
     
     requests.post(args[3], data = json.dumps({
         "text": "Ha ocurrido un error al actualizar las listas de adblockers: " + str(e),
         "username": "🚨 [ERROR] Cloudflare Adblockers"
     }))
+    print("Fatal error has ocurred")
     
     raise e

@@ -29,4 +29,4 @@ jobs:
         pip install -r requirements.txt
 
     - name: Execute update script
-      run: python main.py
+      run: python main.py ${{ secrets.API_TOKEN }} ${{ secrets.IDENTIFIER }} ${{ secrets.SLACK_URL }}
