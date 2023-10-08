@@ -64,8 +64,6 @@ try:
     adBlockingRule = cloudflareRules.getAdblockingRule()
     adBlockingRuleId = adBlockingRule['id']
 
-    print(adBlockingRuleId)
-
     # Clear the rule before deleting the lists
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule)
 
