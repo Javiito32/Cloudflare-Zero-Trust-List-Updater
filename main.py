@@ -1,88 +1,131 @@
 import json
 import requests
 import os
-import time
+import sys
 from api import CloudflareAPI
 from cloudflareLists import CloudflareLists
 from cloudflareRules import CloudflareRules
 
-listsConfig = json.load(open('./lists.json'))
+args = sys.argv
 
-_domains = []
-domains = []
+try:
 
-for _list in listsConfig['lists']:
+    listsConfig = json.load(open('./lists.json'))
 
-    req = requests.get(_list['url'], verify=False)
+    _domains = []
+    domains = []
 
-    if req.status_code == 200:
-        for line in req.text.splitlines():
+    for _list in listsConfig['lists']:
 
-            if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
+        req = requests.get(_list['url'])
 
-                if _list['type'] == 'hostfile':
-                    value = line.split(' ')[1]
-                    if value not in _domains:
-                        domains.append({ "value": value })
-                        _domains.append(value)
-                elif _list['type'] == 'directDomains':
-                    value = line
-                    if value not in _domains:
-                        domains.append({ "value": value })
-                        _domains.append(value)
+        if req.status_code == 200:
+            for line in req.text.splitlines():
 
+                if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
 
-chunks = [domains[x:x+1000] for x in range(0, len(domains), 1000)]
-
-key = 0
-for chunk in chunks:
-
-    file = open(f'./domains/domains_{key}.csv', 'w')
-    for domain in chunk:
-
-        file.write(domain['value'] + '\n')
-
-    file.close()
-    key += 1
+                    if _list['type'] == 'hostfile':
+                        value = line.split(' ')[1]
+                        if value not in _domains:
+                            domains.append({ "value": value })
+                            _domains.append(value)
+                    elif _list['type'] == 'directDomains':
+                        value = line
+                        if value not in _domains:
+                            domains.append({ "value": value })
+                            _domains.append(value)
 
 
-apiToken = os.environ.get('token')
-email = os.environ.get('email')
-identifier = os.environ.get('identifier')
+    chunks = [domains[x:x+1000] for x in range(0, len(domains), 1000)]
 
-cloudflareAPI = CloudflareAPI(apiToken, identifier)
+    # Disabled saving domains to a file
+    '''
+    key = 0
+    for chunk in chunks:
 
-cloudflareLists = CloudflareLists(cloudflareAPI)
-cloudflareRules = CloudflareRules(cloudflareAPI)
+        file = open(f'./domains/domains_{key}.csv', 'w')
+        for domain in chunk:
 
+            file.write(domain['value'] + '\n')
 
-adBlockingRule = cloudflareRules.getAdblockingRule()
+        file.close()
+        key += 1
+    '''
 
-# Clear the rule before deleting the lists
-cloudflareRules.putRule(adBlockingRule['id'], adBlockingRule)
+    apiToken = args[1]
+    identifier = args[2]
 
-lists = cloudflareLists.getLists()
+    cloudflareAPI = CloudflareAPI(apiToken, identifier)
 
-time.sleep(3)
-
-counter = 0
-if lists is not None and len(lists) > 0:
-    for list in lists:
-        if lists['name'].startswith('adlist_'):
-            cloudflareLists.deleteList(list['id'])
-
-            counter += 1
-            if counter == 5:
-                time.sleep(3) # Just to avoid bans
+    cloudflareLists = CloudflareLists(cloudflareAPI)
+    cloudflareRules = CloudflareRules(cloudflareAPI)
 
 
-listsIds = []
+    adBlockingRule = cloudflareRules.getAdblockingRule()
+    adBlockingRuleId = adBlockingRule['id']
 
-counter = 0
-for chunk in chunks:
-    listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id'])
-    counter += 1
-    if counter == 5:
-        time.sleep(3) # Just to avoid bans
+    print(adBlockingRuleId)
+
+    # Clear the rule before deleting the lists
+    cloudflareRules.putRule(adBlockingRuleId, adBlockingRule)
+
+    lists = cloudflareLists.getLists()
+
+    counter = 0
+    if lists is not None and len(lists) > 0:
+        for list in lists:
+            if list['name'].startswith('adlist_'):
+                cloudflareLists.deleteList(list['id'])
+
+
+    listsIds = []
+    errorLists = []
+
+    counter = 0
+    for chunk in chunks:
+        try:
+            listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id'])
+        except Exception as e:
+            errorLists.append((chunks.index(chunk), str(e)))
+            pass
+        
+    cloudflareRules.putRule(adBlockingRuleId, adBlockingRule, listsIds)
+
+    if len(errorLists) > 0:
+
+        attachmentFields = []
+
+        for error in errorLists:
+            attachmentFields.append({
+                "title": "# [Error chunk " + str(error[0]) + "]",
+                "value": error[1],
+                "short": False
+            })
+            
+
+        requests.post(args[3], data = json.dumps({
+            "text": "Las listas de adblockers se han actualizado con errores, " + str(len(errorLists)) + " listas no se han podido añadir",
+            "username": "⚠️ [WARNING] Cloudflare Adblockers",
+            "attachments":[
+                {
+                    "fallback":"Listado de errores",
+                    "pretext":"Listado de errores",
+                    "color":"#D00000",
+                    "fields": attachmentFields
+                }
+            ]
+        }))
+    else:
+        requests.post(args[3], data = json.dumps({
+            "text": "Las listas de adblockers se han actualizado correctamente, se han añadido " + str(len(listsIds)) + " listas.",
+            "username": "✅ Cloudflare Adblockers"
+        }))
+
+except Exception as e:
     
-cloudflareRules.putRule(adBlockingRule['id'], adBlockingRule, listsIds)
+    requests.post(args[3], data = json.dumps({
+        "text": "Ha ocurrido un error al actualizar las listas de adblockers: " + str(e),
+        "username": "🚨 [ERROR] Cloudflare Adblockers"
+    }))
+    
+    raise e
