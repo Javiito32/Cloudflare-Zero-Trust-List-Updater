@@ -1,0 +1,27 @@
+name: Update cloudflare adblocking lists
+
+on:
+  schedule:
+  - cron: '0 17 * * fri'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup Masks
+      shell: bash
+      run: echo "Secrets ::add-mask::${{ secrets.API_TOKEN }} - ::add-mask::${{ secrets.IDENTIFIER }} - ::add-mask::${{ secrets.SLACK_URL }}"
+
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+        
+    - name: Execute update script
+      run: python main.py
