@@ -15,6 +15,7 @@ try:
     _domains = []
     domains = []
 
+    print("Fetching domains...")
     for _list in listsConfig['lists']:
 
         req = requests.get(_list['url'])
@@ -34,7 +35,7 @@ try:
                         if value not in _domains:
                             domains.append({ "value": value })
                             _domains.append(value)
-
+    print("Done! " + str(len(domains)) + " domains fetched")
 
     chunks = [domains[x:x+1000] for x in range(0, len(domains), 1000)]
 
