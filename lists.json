@@ -30,6 +30,16 @@
             "listType": "ads",
             "url": "https://v.firebog.net/hosts/Easylist.txt",
             "type": "directDomains"
+        },
+        {
+            "listType": "ads",
+            "url": "https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.txt",
+            "type": "hostfile"
+        },
+        {
+            "listType": "ads,privacy",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",
+            "type": "hostfile"
         }
         
     ]
