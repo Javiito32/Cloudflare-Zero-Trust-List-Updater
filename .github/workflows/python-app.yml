@@ -2,7 +2,7 @@ name: Update cloudflare adblocking lists
 
 on:
   schedule:
-  - cron: '0 17 * * fri'
+  - cron: '0 2 * * fri'
   workflow_dispatch:
 
 permissions:
