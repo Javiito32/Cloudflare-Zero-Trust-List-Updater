@@ -15,6 +15,7 @@ class CloudflareAPI:
         self.madeRequests += amount
         if self.madeRequests >= self.cloudflareAPImaxRequests:
             self.madeRequests = 0
+            print("Requests exceeded, waiting " + str(self.cloudflareAPImaxRequestsTime) + " seconds...")
             time.sleep(self.cloudflareAPImaxRequestsTime)
 
     def get(self, url: str, headers: dict = {}):
