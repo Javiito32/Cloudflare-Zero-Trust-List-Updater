@@ -38,7 +38,7 @@
         },
         {
             "listType": "ads,privacy",
-            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt",
             "type": "hostfile"
         }
         
