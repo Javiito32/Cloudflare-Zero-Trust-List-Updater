@@ -2,6 +2,8 @@ import json
 import requests
 import os
 import sys
+import asyncio
+import httpx
 from api import CloudflareAPI
 from cloudflareLists import CloudflareLists
 from cloudflareRules import CloudflareRules
@@ -12,29 +14,44 @@ try:
 
     listsConfig = json.load(open('./lists.json'))
 
-    _domains = []
+    _domains = {}
     domains = []
 
     print("Fetching domains...")
-    for _list in listsConfig['lists']:
 
-        req = requests.get(_list['url'])
+    #######################
+    # Async fetch domains #
+    #######################
+    async def fetchDomain(url: str, listType: str, domains: list, _domains: dict):
+        async with httpx.AsyncClient() as session:
+                print("Gettint list: " + url)
+                list = await session.get(url)
+                print("List fetched: " + url)
 
-        if req.status_code == 200:
-            for line in req.text.splitlines():
+                for line in list.text.splitlines():
+                    if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
 
-                if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
+                            if listType == 'hostfile':
+                                value = line.split(' ')[1]
+                                if value not in _domains:
+                                    domains.append({ "value": value })
+                                    _domains[value] = True
+                            elif listType == 'directDomains':
+                                value = line
+                                if value not in _domains:
+                                    domains.append({ "value": value })
+                                    _domains[value] = True
 
-                    if _list['type'] == 'hostfile':
-                        value = line.split(' ')[1]
-                        if value not in _domains:
-                            domains.append({ "value": value })
-                            _domains.append(value)
-                    elif _list['type'] == 'directDomains':
-                        value = line
-                        if value not in _domains:
-                            domains.append({ "value": value })
-                            _domains.append(value)
+                return list
+        
+    async def fetchDomains(lists: list, domains: list, _domains: dict):
+        async with asyncio.TaskGroup() as tg:
+            for list in lists:
+                tg.create_task(fetchDomain(list['url'], list['type'], domains, _domains))
+
+
+    asyncio.run(fetchDomains(listsConfig['lists'], domains, _domains))
+
     print("Done! " + str(len(domains)) + " domains fetched")
 
     chunks = [domains[x:x+1000] for x in range(0, len(domains), 1000)]
