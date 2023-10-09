@@ -1,6 +1,5 @@
 import json
 import requests
-import os
 import sys
 import asyncio
 import httpx
