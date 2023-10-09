@@ -40,7 +40,41 @@
             "listType": "ads,privacy",
             "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/light.txt",
             "type": "hostfile"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.amazon.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.apple.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.huawei.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.winoffice.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.tiktok.extended.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "trackers",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/native.lgwebos.txt",
+            "type": "directDomains"
+        },
+        {
+            "listType": "popUps",
+            "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/popupads-onlydomains.txt",
+            "type": "directDomains"
         }
-        
     ]
 }

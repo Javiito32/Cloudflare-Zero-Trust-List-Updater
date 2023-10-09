@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  update_rules:
     runs-on: ubuntu-latest
 
     steps:
