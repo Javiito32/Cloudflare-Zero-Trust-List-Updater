@@ -3,6 +3,7 @@ import requests
 import sys
 import asyncio
 import httpx
+import datetime
 from api import CloudflareAPI
 from cloudflareLists import CloudflareLists
 from cloudflareRules import CloudflareRules
@@ -73,6 +74,23 @@ try:
     identifier = args[2]
 
     cloudflareAPI = CloudflareAPI(apiToken, identifier)
+
+    print("Verifying Cloudflare API token...")
+    get = cloudflareAPI.get('https://api.cloudflare.com/client/v4/user/tokens/verify')
+    if get.status_code == 200:
+        data = get.json()
+        if data['success'] == True:
+            expiresOn = data['result']['expires_on']
+            if datetime.datetime.strptime(expiresOn, '%Y-%m-%dT%H:%M:%S%z') < datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=8):
+                requests.post(args[3], data = json.dumps({
+                    "text": "El token de Cloudflare Adblocker está a punto de caducar, por favor, renuévalo",
+                    "username": "⚠️ [TOKEN RENEWAL] Cloudflare Adblockers"
+                }))
+                print("Cloudflare API token verified, but it's about to expire, please renew it")
+            else:
+                print("Cloudflare API token verified")
+        else:
+            print('Error: ' + data['errors'][0]['message'])
 
     cloudflareLists = CloudflareLists(cloudflareAPI)
     cloudflareRules = CloudflareRules(cloudflareAPI)
