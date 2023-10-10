@@ -18,16 +18,16 @@ try:
     _domains = {}
     domains = []
 
-    logging.info("::debug::Fetching domains...")
+    logging.info("echo ::debug::Fetching domains...")
 
     #######################
     # Async fetch domains #
     #######################
     async def fetchDomain(url: str, listType: str, domains: list, _domains: dict):
         async with httpx.AsyncClient() as session:
-                logging.info("::debug::Gettint list: " + url)
+                logging.info("echo ::debug::Gettint list: " + url)
                 list = await session.get(url)
-                logging.info("::debug::List fetched: " + url)
+                logging.info("echo ::debug::List fetched: " + url)
 
                 for line in list.text.splitlines():
                     if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
@@ -53,7 +53,7 @@ try:
 
     asyncio.run(fetchDomains(listsConfig['lists'], domains, _domains))
 
-    logging.info("::debug::Done! " + str(len(domains)) + " domains fetched")
+    logging.info("echo ::debug::Done! " + str(len(domains)) + " domains fetched")
 
     chunks = [domains[x:x+1000] for x in range(0, len(domains), 1000)]
 
@@ -76,7 +76,7 @@ try:
 
     cloudflareAPI = CloudflareAPI(apiToken, identifier)
 
-    logging.info("::debug::Verifying Cloudflare API token...")
+    logging.info("echo ::debug::Verifying Cloudflare API token...")
     get = cloudflareAPI.get('https://api.cloudflare.com/client/v4/user/tokens/verify')
     if get.status_code == 200:
         data = get.json()
@@ -87,60 +87,60 @@ try:
                     "text": "El token de Cloudflare Adblocker está a punto de caducar, por favor, renuévalo",
                     "username": "⚠️ [TOKEN RENEWAL] Cloudflare Adblockers"
                 }))
-                logging.info("::debug::Cloudflare API token verified, but it's about to expire, please renew it")
+                logging.info("echo ::debug::Cloudflare API token verified, but it's about to expire, please renew it")
             else:
-                logging.info("::debug::Cloudflare API token verified")
+                logging.info("echo ::debug::Cloudflare API token verified")
         else:
-            logging.info("::error file=main.py,line=79,title=Api Error::Cloudflare API token verification failed")
+            logging.info("echo ::error file=main.py,line=79,title=Api Error::Cloudflare API token verification failed")
 
     cloudflareLists = CloudflareLists(cloudflareAPI)
     cloudflareRules = CloudflareRules(cloudflareAPI)
-    logging.info("::debug::Cloudflare API initialized")
+    logging.info("echo ::debug::Cloudflare API initialized")
 
 
     adBlockingRule = cloudflareRules.getAdblockingRule()
     adBlockingRuleId = adBlockingRule['id']
-    logging.info("::debug::Cloudflare Adblocking rule initialized")
+    logging.info("echo ::debug::Cloudflare Adblocking rule initialized")
 
     # Clear the rule before deleting the lists
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule)
-    logging.info("::debug::Cloudflare Adblocking rule cleared")
+    logging.info("echo ::debug::Cloudflare Adblocking rule cleared")
 
     lists = cloudflareLists.getLists()
-    logging.info("::debug::Cloudflare lists initialized")
+    logging.info("echo ::debug::Cloudflare lists initialized")
 
     counter = 0
-    logging.info("::debug::Deleting Cloudflare lists")
+    logging.info("echo ::debug::Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
         for list in lists:
             if list['name'].startswith('adlist_'):
                 cloudflareLists.deleteList(list['id'])
-        logging.info("::debug::Cloudflare lists deleted")
+        logging.info("echo ::debug::Cloudflare lists deleted")
     else:
-        logging.info("::debug::Cloudflare lists not found, skipping...")
+        logging.info("echo ::debug::Cloudflare lists not found, skipping...")
 
 
     listsIds = []
     errorLists = []
 
     counter = 0
-    logging.info("::debug::Creating Cloudflare lists")
+    logging.info("echo ::debug::Creating Cloudflare lists")
     for chunk in chunks:
         try:
             listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id'])
         except Exception as e:
             errorLists.append((chunks.index(chunk), str(e)))
-            logging.info("::group::Error creating list " + str(chunks.index(chunk)))
-            logging.info("::error::Error creating the list")
-            logging.info("::error::" + str(e))
-            logging.info("::debug::-----------------------------------") 
-            logging.info("::debug::" + chunk)
-            logging.info("::endgroup::")
+            logging.info("echo ::group::Error creating list " + str(chunks.index(chunk)))
+            logging.info("echo ::error::Error creating the list")
+            logging.info("echo ::error::" + str(e))
+            logging.info("echo ::debug::-----------------------------------") 
+            logging.info("echo ::debug::" + str(chunk))
+            logging.info("echo ::endgroup::")
             pass
-    logging.info("::debug::Cloudflare lists created")
+    logging.info("echo ::debug::Cloudflare lists created")
 
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule, listsIds)
-    logging.info("::debug::Cloudflare Adblocking rule updated")
+    logging.info("echo ::debug::Cloudflare Adblocking rule updated")
 
     if len(errorLists) > 0:
 
@@ -172,7 +172,7 @@ try:
             "username": "✅ Cloudflare Adblockers"
         }))
 
-    logging.info("::debug::Done!")
+    logging.info("echo ::debug::Done!")
 
 except Exception as e:
     
@@ -180,6 +180,6 @@ except Exception as e:
         "text": "Ha ocurrido un error al actualizar las listas de adblockers: " + str(e),
         "username": "🚨 [ERROR] Cloudflare Adblockers"
     }))
-    logging.info("::error file=main.py,title=Fatal error::" + str(e))
+    logging.info("echo ::error file=main.py,title=Fatal error::" + str(e))
     
     raise e
