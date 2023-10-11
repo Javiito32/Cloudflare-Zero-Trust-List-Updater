@@ -23,6 +23,7 @@ try:
 
     _domains = {}
     domains = []
+    domainsErrors = []
 
     log("::notice::Fetching domains...")
 
@@ -30,7 +31,8 @@ try:
     # Async fetch domains #
     #######################
     async def fetchDomain(url: str, listType: str, domains: list, _domains: dict):
-        async with httpx.AsyncClient() as session:
+        try:
+            async with httpx.AsyncClient() as session:
                 log("::notice::Gettint list: " + url)
                 list = await session.get(url)
                 log("::notice::List fetched: " + url)
@@ -48,8 +50,10 @@ try:
                                 if value not in _domains:
                                     domains.append({ "value": value })
                                     _domains[value] = True
-
-                return list
+        except Exception as e:
+            log("::error::Error fetching list: " + url)
+            log("::error::" + str(e))
+            domainsErrors.append(url)
         
     async def fetchDomains(lists: list, domains: list, _domains: dict):
         async with asyncio.TaskGroup() as tg:
@@ -120,7 +124,6 @@ try:
             for list in _lists:
                 if list['name'].startswith('adlist_'):
                     tg.create_task(cloudflareLists.deleteList(list['id']))
-            return True
 
     log("::notice::Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
@@ -131,61 +134,97 @@ try:
 
 
     listsIds = []
+    tasks = []
     errorLists = []
 
     log("::notice::Creating Cloudflare lists")
-    async def createLists():
+    async def createLists(_chunks: list, _tasks: list):
         async with asyncio.TaskGroup() as tg:
-            for chunk in chunks:
-                try:
-                    tg.create_task(listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id']))
-                except Exception as e:
-                    errorLists.append((chunks.index(chunk), str(e)))
-                    log("::group::Error creating list " + str(chunks.index(chunk)))
-                    log("::error::Error creating the list")
-                    log("::error::" + str(e))
-                    log("::notice::-----------------------------------") 
-                    log("::notice::" + str(chunk))
-                    log("::endgroup::")
-                    pass
-    asyncio.run(createLists())
-    print(listsIds)
-    log("::notice::Cloudflare lists created")
+            for chunk in _chunks:
+                task = tg.create_task(cloudflareLists.createList(f'adlist_{_chunks.index(chunk)}', f'Adlist {_chunks.index(chunk)}', chunk))
+                _tasks.append((task, _chunks.index(chunk)))
+
+    asyncio.run(createLists(chunks, tasks))
+
+    for value in tasks:
+        task = value[0]
+        chunk = chunks[value[1]]
+        if type(task.result()) == tuple:
+            listName = task.result()[0]
+            error = task.result()[1]
+            errorLists.append((chunks.index(chunk), str(error)))
+            log("::group::Error creating list " + listName)
+            log("::error::Error creating the list")
+            log("::error::" + str(error))
+            log("::notice::-----------------------------------") 
+            log("::notice::" + str(chunk))
+            log("::endgroup::")
+        else:
+            listsIds.append(task.result()['id'])
+
+    if len(errorLists) > 0:
+        log("::warning::Cloudflare lists created with " + str(len(errorLists)) + " errors")
+    elif len(listsIds) > 0:
+        log("::notice::Cloudflare lists created")
 
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule, listsIds)
     log("::notice::Cloudflare Adblocking rule updated")
 
-    if len(errorLists) > 0:
+    if len(errorLists) > 0 or len(domainsErrors) > 0:
 
-        attachmentFields = []
+        if len(errorLists) > 0:
+            attachmentFields = []
 
-        for error in errorLists:
-            attachmentFields.append({
-                "title": "# [Error chunk " + str(error[0]) + "]",
-                "value": error[1],
-                "short": False
-            })
-            
+            for error in errorLists:
+                attachmentFields.append({
+                    "title": "# [Error chunk " + str(error[0]) + "]",
+                    "value": error[1],
+                    "short": False
+                })
+                
 
-        requests.post(args[3], data = json.dumps({
-            "text": "Las listas de adblockers se han actualizado con errores, " + str(len(errorLists)) + " listas no se han podido añadir",
-            "username": "⚠️ [WARNING] Cloudflare Adblocker",
-            "attachments":[
-                {
-                    "fallback":"Listado de errores",
-                    "pretext":"Listado de errores",
-                    "color":"#D00000",
-                    "fields": attachmentFields
-                }
-            ]
-        }))
+            requests.post(args[3], data = json.dumps({
+                "text": "Las listas de adblockers se han actualizado con errores, " + str(len(errorLists)) + " listas no se han podido añadir",
+                "username": "⚠️ [WARNING] Cloudflare Adblocker",
+                "attachments":[
+                    {
+                        "fallback":"Listado de errores",
+                        "pretext":"Listado de errores",
+                        "color":"#D00000",
+                        "fields": attachmentFields
+                    }
+                ]
+            }))
+
+        if len(domainsErrors) > 0:
+            attachmentFieldsDomains = []
+
+            for error in domainsErrors:
+                attachmentFieldsDomains.append({
+                    "title": "# [Error URL " + str(error) + "]",
+                    "value": error,
+                    "short": False
+                })
+
+            requests.post(args[3], data = json.dumps({
+                "text": "Algunos dominios de las listas no han funcionado o ya no están disponibles, " + str(len(domainsErrors)) + " listas no se han podido añadir",
+                "username": "⚠️ [WARNING] Cloudflare Adblocker",
+                "attachments":[
+                    {
+                        "fallback":"Dominios con errores",
+                        "pretext":"Dominios con errores",
+                        "color":"#D00000",
+                        "fields": attachmentFields
+                    }
+                ]
+            }))
     else:
         requests.post(args[3], data = json.dumps({
             "text": "Las listas de adblockers se han actualizado correctamente, se han añadido " + str(len(listsIds)) + " listas.",
             "username": "✅ Cloudflare Adblocker"
         }))
 
-    log("::notice::Done!")
+    log("::notice::Done! " + str(len(listsIds)) + " lists added")
 
 except Exception as e:
     
