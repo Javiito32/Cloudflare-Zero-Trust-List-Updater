@@ -91,7 +91,7 @@ try:
             if datetime.datetime.strptime(expiresOn, '%Y-%m-%dT%H:%M:%S%z') < datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=8):
                 requests.post(args[3], data = json.dumps({
                     "text": "El token de Cloudflare Adblocker está a punto de caducar, por favor, renuévalo",
-                    "username": "⚠️ [TOKEN RENEWAL] Cloudflare Adblockers"
+                    "username": "⚠️ [TOKEN RENEWAL] Cloudflare Adblocker"
                 }))
                 log("::notice::Cloudflare API token verified, but it's about to expire, please renew it")
             else:
@@ -115,12 +115,16 @@ try:
     lists = cloudflareLists.getLists()
     log("::notice::Cloudflare lists initialized")
 
-    counter = 0
+    async def deleteLists(_lists: list):
+        async with asyncio.TaskGroup() as tg:
+            for list in _lists:
+                if list['name'].startswith('adlist_'):
+                    tg.create_task(cloudflareLists.deleteList(list['id']))
+            return True
+
     log("::notice::Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
-        for list in lists:
-            if list['name'].startswith('adlist_'):
-                cloudflareLists.deleteList(list['id'])
+        asyncio.run(deleteLists(lists))
         log("::notice::Cloudflare lists deleted")
     else:
         log("::notice::Cloudflare lists not found, skipping...")
@@ -129,20 +133,23 @@ try:
     listsIds = []
     errorLists = []
 
-    counter = 0
     log("::notice::Creating Cloudflare lists")
-    for chunk in chunks:
-        try:
-            listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id'])
-        except Exception as e:
-            errorLists.append((chunks.index(chunk), str(e)))
-            log("::group::Error creating list " + str(chunks.index(chunk)))
-            log("::error::Error creating the list")
-            log("::error::" + str(e))
-            log("::notice::-----------------------------------") 
-            log("::notice::" + str(chunk))
-            log("::endgroup::")
-            pass
+    async def createLists():
+        async with asyncio.TaskGroup() as tg:
+            for chunk in chunks:
+                try:
+                    tg.create_task(listsIds.append(cloudflareLists.createList(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id']))
+                except Exception as e:
+                    errorLists.append((chunks.index(chunk), str(e)))
+                    log("::group::Error creating list " + str(chunks.index(chunk)))
+                    log("::error::Error creating the list")
+                    log("::error::" + str(e))
+                    log("::notice::-----------------------------------") 
+                    log("::notice::" + str(chunk))
+                    log("::endgroup::")
+                    pass
+    asyncio.run(createLists())
+    print(listsIds)
     log("::notice::Cloudflare lists created")
 
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule, listsIds)
@@ -162,7 +169,7 @@ try:
 
         requests.post(args[3], data = json.dumps({
             "text": "Las listas de adblockers se han actualizado con errores, " + str(len(errorLists)) + " listas no se han podido añadir",
-            "username": "⚠️ [WARNING] Cloudflare Adblockers",
+            "username": "⚠️ [WARNING] Cloudflare Adblocker",
             "attachments":[
                 {
                     "fallback":"Listado de errores",
@@ -175,7 +182,7 @@ try:
     else:
         requests.post(args[3], data = json.dumps({
             "text": "Las listas de adblockers se han actualizado correctamente, se han añadido " + str(len(listsIds)) + " listas.",
-            "username": "✅ Cloudflare Adblockers"
+            "username": "✅ Cloudflare Adblocker"
         }))
 
     log("::notice::Done!")
@@ -184,7 +191,7 @@ except Exception as e:
     
     requests.post(args[3], data = json.dumps({
         "text": "Ha ocurrido un error al actualizar las listas de adblockers: " + str(e),
-        "username": "🚨 [ERROR] Cloudflare Adblockers"
+        "username": "🚨 [ERROR] Cloudflare Adblocker"
     }))
     log("::error file=main.py,title=Fatal error::" + str(e))
     
