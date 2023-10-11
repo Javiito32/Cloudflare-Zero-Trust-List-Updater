@@ -1,5 +1,6 @@
 import json
 from api import CloudflareAPI
+from asyncio import CancelledError
 
 class CloudflareLists:
 
@@ -16,31 +17,36 @@ class CloudflareLists:
             raise Exception(f'CODE [{req.status_code}] error, request not completed: ' + req.text)
 
     async def deleteList(self, uuid: str):
-        req = await self.cloudflareAPI.deleteAsync(f'https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists/{uuid}')
+        try:
+            req = await self.cloudflareAPI.deleteAsync(f'https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists/{uuid}')
 
-        if req.status_code == 200:
-            _json = req.json()
-            if _json['success'] == True:
-                return _json['result']
+            if req.status_code == 200:
+                _json = req.json()
+                if _json['success'] == True:
+                    return _json['result']
+                else:
+                    return (uuid, f'Error on requests syntaxt: ' + str(_json))
             else:
-                raise Exception(f'Error on requests syntaxt: ' + str(_json))
-        else:
-            raise Exception(f'CODE [{req.status_code}] error, request not completed: ' + req.text)
+                return (uuid, f'CODE [{req.status_code}] error, request not completed: ' + req.text)
+        except Exception as e:
+            return (uuid, f'Error on request: ' + str(e))
         
     async def createList(self, name: str, description: str, domains: list):
-        req = await self.cloudflareAPI.postAsync('https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists', data = {
-            'name': name,
-            'description': description,
-            'type': 'DOMAIN',
-            'items': domains
-        })
+        try:
+            req = await self.cloudflareAPI.postAsync('https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists', data = {
+                'name': name,
+                'description': description,
+                'type': 'DOMAIN',
+                'items': domains
+            })
 
-        if req.status_code == 200:
-            _json = req.json()
-            if _json['success'] == True:
-                return _json['result']
+            if req.status_code == 200:
+                _json = req.json()
+                if _json['success'] == True:
+                    return _json['result']
+                else:
+                    return (name, f'Error on requests syntaxt: ' + str(_json))
             else:
-                raise Exception(f'Error on requests syntaxt: ' + str(_json))
-        else:
-
-            raise Exception(f'CODE [{req.status_code}] error, request not completed: ' + req.text)
+                return (name, f'CODE [{req.status_code}] error, request not completed: ' + req.text)
+        except Exception as e:
+            return (name, f'Error on request: ' + str(e))

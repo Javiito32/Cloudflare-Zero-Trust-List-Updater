@@ -45,7 +45,7 @@ class CloudflareAPI:
         url = url.replace('$$identifier$$', self.identifier)
 
         self.requestCounter()
-        with httpx.AsyncClient() as session:
+        async with httpx.AsyncClient() as session:
             return await session.delete(url, headers=headers)
     
     def post(self, url: str, headers: dict = {}, data: dict = {}):
@@ -60,5 +60,5 @@ class CloudflareAPI:
         url = url.replace('$$identifier$$', self.identifier)
 
         self.requestCounter()
-        with httpx.AsyncClient() as session:
+        async with httpx.AsyncClient() as session:
             return await session.post(url, headers=headers, data = json.dumps(data))
