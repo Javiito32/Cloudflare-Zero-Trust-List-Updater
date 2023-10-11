@@ -1,4 +1,5 @@
 import requests
+import httpx
 import json
 import time
 
@@ -39,9 +40,25 @@ class CloudflareAPI:
         self.requestCounter()
         return requests.delete(url, headers=headers)
     
+    async def deleteAsync(self, url: str, headers: dict = {}):
+        headers['Authorization'] = 'Bearer ' + self.apiToken
+        url = url.replace('$$identifier$$', self.identifier)
+
+        self.requestCounter()
+        with httpx.AsyncClient() as session:
+            return await session.delete(url, headers=headers)
+    
     def post(self, url: str, headers: dict = {}, data: dict = {}):
         headers['Authorization'] = 'Bearer ' + self.apiToken
         url = url.replace('$$identifier$$', self.identifier)
 
         self.requestCounter()
         return requests.post(url, headers=headers, data = json.dumps(data))
+    
+    async def postAsync(self, url: str, headers: dict = {}, data: dict = {}):
+        headers['Authorization'] = 'Bearer ' + self.apiToken
+        url = url.replace('$$identifier$$', self.identifier)
+
+        self.requestCounter()
+        with httpx.AsyncClient() as session:
+            return await session.post(url, headers=headers, data = json.dumps(data))

@@ -15,8 +15,8 @@ class CloudflareLists:
         else:
             raise Exception(f'CODE [{req.status_code}] error, request not completed: ' + req.text)
 
-    def deleteList(self, uuid: str):
-        req = self.cloudflareAPI.delete(f'https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists/{uuid}')
+    async def deleteList(self, uuid: str):
+        req = await self.cloudflareAPI.deleteAsync(f'https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists/{uuid}')
 
         if req.status_code == 200:
             _json = req.json()
@@ -27,8 +27,8 @@ class CloudflareLists:
         else:
             raise Exception(f'CODE [{req.status_code}] error, request not completed: ' + req.text)
         
-    def createList(self, name: str, description: str, domains: list):
-        req = self.cloudflareAPI.post('https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists', data = {
+    async def createList(self, name: str, description: str, domains: list):
+        req = await self.cloudflareAPI.postAsync('https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists', data = {
             'name': name,
             'description': description,
             'type': 'DOMAIN',
