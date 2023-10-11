@@ -126,7 +126,7 @@ try:
             for list in _lists:
                 if list['name'].startswith('adlist_'):
                     tg.create_task(cloudflareLists.deleteList(list['id'], session))
-        session.close()
+        await session.close()
 
     log("::notice::Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
@@ -147,7 +147,7 @@ try:
             for chunk in _chunks:
                 task = tg.create_task(cloudflareLists.createList(f'adlist_{_chunks.index(chunk)}', f'Adlist {_chunks.index(chunk)}', chunk, session))
                 _tasks.append((task, _chunks.index(chunk)))
-        session.close()
+        await session.close()
 
     asyncio.run(createLists(chunks, tasks))
 
