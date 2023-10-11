@@ -24,16 +24,16 @@ try:
     _domains = {}
     domains = []
     domainsErrors = []
-    log("::notice::Fetching domains...")
+    log("Fetching domains...")
 
     #######################
     # Async fetch domains #
     #######################
     async def fetchDomain(url: str, listType: str, domains: list, _domains: dict, session: aiohttp.ClientSession):
         try:
-            log("::notice::Gettint list: " + url)
+            log("Gettint list: " + url)
             list = await session.get(url)
-            log("::notice::List fetched: " + url)
+            log("List fetched: " + url)
 
             text = await list.text()
             for line in text.splitlines():
@@ -41,17 +41,17 @@ try:
 
                         if listType == 'hostfile':
                             value = line.split(' ')[1]
-                            if value not in _domains:
+                            if value not in _domains and not (value == '' or value == ' '):
                                 domains.append({ "value": value })
                                 _domains[value] = True
                         elif listType == 'directDomains':
                             value = line
-                            if value not in _domains:
+                            if value not in _domains and not (value == '' or value == ' '):
                                 domains.append({ "value": value })
                                 _domains[value] = True
         except Exception as e:
-            log("::error::Error fetching list: " + url)
-            log("::error::" + str(e))
+            log("::error title=Domain list error::Error fetching list: " + url)
+            log("::error tittle=Domain list error::" + str(e))
             domainsErrors.append(url)
         
     async def fetchDomains(lists: list, domains: list, _domains: dict):
@@ -87,7 +87,7 @@ try:
 
     cloudflareAPI = CloudflareAPI(apiToken, identifier)
 
-    log("::notice::Verifying Cloudflare API token...")
+    log("Verifying Cloudflare API token...")
     get = cloudflareAPI.get('https://api.cloudflare.com/client/v4/user/tokens/verify')
     if get.status_code == 200:
         data = get.json()
@@ -98,27 +98,27 @@ try:
                     "text": "El token de Cloudflare Adblocker está a punto de caducar, por favor, renuévalo",
                     "username": "⚠️ [TOKEN RENEWAL] Cloudflare Adblocker"
                 }))
-                log("::notice::Cloudflare API token verified, but it's about to expire, please renew it")
+                log("Cloudflare API token verified, but it's about to expire, please renew it")
             else:
-                log("::notice::Cloudflare API token verified")
+                log("Cloudflare API token verified")
         else:
             log("::error file=main.py,line=79,title=Api Error::Cloudflare API token verification failed")
 
     cloudflareLists = CloudflareLists(cloudflareAPI)
     cloudflareRules = CloudflareRules(cloudflareAPI)
-    log("::notice::Cloudflare API initialized")
+    log("Cloudflare API initialized")
 
 
     adBlockingRule = cloudflareRules.getAdblockingRule()
     adBlockingRuleId = adBlockingRule['id']
-    log("::notice::Cloudflare Adblocking rule initialized")
+    log("Cloudflare Adblocking rule initialized")
 
     # Clear the rule before deleting the lists
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule)
-    log("::notice::Cloudflare Adblocking rule cleared")
+    log("Cloudflare Adblocking rule cleared")
 
     lists = cloudflareLists.getLists()
-    log("::notice::Cloudflare lists initialized")
+    log("Cloudflare lists initialized")
 
     async def deleteLists(_lists: list):
         session = aiohttp.ClientSession()
@@ -128,19 +128,19 @@ try:
                     tg.create_task(cloudflareLists.deleteList(list['id'], session))
         await session.close()
 
-    log("::notice::Deleting Cloudflare lists")
+    log("Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
         asyncio.run(deleteLists(lists))
-        log("::notice::Cloudflare lists deleted")
+        log("Cloudflare lists deleted")
     else:
-        log("::notice::Cloudflare lists not found, skipping...")
+        log("Cloudflare lists not found, skipping...")
 
 
     listsIds = []
     tasks = []
     errorLists = []
 
-    log("::notice::Creating Cloudflare lists")
+    log("Creating Cloudflare lists")
     async def createLists(_chunks: list, _tasks: list):
         session = aiohttp.ClientSession()
         async with asyncio.TaskGroup() as tg:
@@ -159,21 +159,21 @@ try:
             error = task.result()[1]
             errorLists.append((chunks.index(chunk), str(error)))
             log("::group::Error creating list " + listName)
-            log("::error::Error creating the list")
-            log("::error::" + str(error))
-            log("::notice::-----------------------------------") 
-            log("::notice::" + str(chunk))
+            log(f"::error title=Error on {listName}::Error creating the list")
+            log(f"::error title=Error on {listName}::" + str(error))
+            log(f"::error title=Error on {listName}::-----------------------------------") 
+            log(f"::error title=Error on {listName}::" + str(chunk))
             log("::endgroup::")
         else:
             listsIds.append(task.result()['id'])
 
     if len(errorLists) > 0:
-        log("::warning::Cloudflare lists created with " + str(len(errorLists)) + " errors")
+        log("::warning title=Error on lists creation::Cloudflare lists created with " + str(len(errorLists)) + " errors")
     elif len(listsIds) > 0:
-        log("::notice::Cloudflare lists created")
+        log("Cloudflare lists created")
 
     cloudflareRules.putRule(adBlockingRuleId, adBlockingRule, listsIds)
-    log("::notice::Cloudflare Adblocking rule updated")
+    log("Cloudflare Adblocking rule updated")
 
     if len(errorLists) > 0 or len(domainsErrors) > 0:
 
@@ -229,7 +229,7 @@ try:
             "username": "✅ Cloudflare Adblocker"
         }))
 
-    log("::notice::Done! " + str(len(listsIds)) + " lists added")
+    log("Done! " + str(len(listsIds)) + " lists added")
 
 except Exception as e:
     
