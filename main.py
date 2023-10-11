@@ -2,7 +2,7 @@ import json
 import requests
 import sys
 import asyncio
-import httpx
+import aiohttp
 import datetime
 #import subprocess
 import os
@@ -24,32 +24,31 @@ try:
     _domains = {}
     domains = []
     domainsErrors = []
-
     log("::notice::Fetching domains...")
 
     #######################
     # Async fetch domains #
     #######################
-    async def fetchDomain(url: str, listType: str, domains: list, _domains: dict):
+    async def fetchDomain(url: str, listType: str, domains: list, _domains: dict, session: aiohttp.ClientSession):
         try:
-            async with httpx.AsyncClient() as session:
-                log("::notice::Gettint list: " + url)
-                list = await session.get(url)
-                log("::notice::List fetched: " + url)
+            log("::notice::Gettint list: " + url)
+            list = await session.get(url)
+            log("::notice::List fetched: " + url)
 
-                for line in list.text.splitlines():
-                    if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
+            text = await list.text()
+            for line in text.splitlines():
+                if not line.startswith('#') and not line == '' and not line == ' ' and not line.endswith('.'):
 
-                            if listType == 'hostfile':
-                                value = line.split(' ')[1]
-                                if value not in _domains:
-                                    domains.append({ "value": value })
-                                    _domains[value] = True
-                            elif listType == 'directDomains':
-                                value = line
-                                if value not in _domains:
-                                    domains.append({ "value": value })
-                                    _domains[value] = True
+                        if listType == 'hostfile':
+                            value = line.split(' ')[1]
+                            if value not in _domains:
+                                domains.append({ "value": value })
+                                _domains[value] = True
+                        elif listType == 'directDomains':
+                            value = line
+                            if value not in _domains:
+                                domains.append({ "value": value })
+                                _domains[value] = True
         except Exception as e:
             log("::error::Error fetching list: " + url)
             log("::error::" + str(e))
@@ -57,8 +56,10 @@ try:
         
     async def fetchDomains(lists: list, domains: list, _domains: dict):
         async with asyncio.TaskGroup() as tg:
+            session = aiohttp.ClientSession()
             for list in lists:
-                tg.create_task(fetchDomain(list['url'], list['type'], domains, _domains))
+                tg.create_task(fetchDomain(list['url'], list['type'], domains, _domains, session))
+        await session.close()
 
 
     asyncio.run(fetchDomains(listsConfig['lists'], domains, _domains))
@@ -120,10 +121,12 @@ try:
     log("::notice::Cloudflare lists initialized")
 
     async def deleteLists(_lists: list):
+        session = aiohttp.ClientSession()
         async with asyncio.TaskGroup() as tg:
             for list in _lists:
                 if list['name'].startswith('adlist_'):
-                    tg.create_task(cloudflareLists.deleteList(list['id']))
+                    tg.create_task(cloudflareLists.deleteList(list['id'], session))
+        session.close()
 
     log("::notice::Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
@@ -139,10 +142,12 @@ try:
 
     log("::notice::Creating Cloudflare lists")
     async def createLists(_chunks: list, _tasks: list):
+        session = aiohttp.ClientSession()
         async with asyncio.TaskGroup() as tg:
             for chunk in _chunks:
-                task = tg.create_task(cloudflareLists.createList(f'adlist_{_chunks.index(chunk)}', f'Adlist {_chunks.index(chunk)}', chunk))
+                task = tg.create_task(cloudflareLists.createList(f'adlist_{_chunks.index(chunk)}', f'Adlist {_chunks.index(chunk)}', chunk, session))
                 _tasks.append((task, _chunks.index(chunk)))
+        session.close()
 
     asyncio.run(createLists(chunks, tasks))
 
