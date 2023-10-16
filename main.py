@@ -47,7 +47,7 @@ try:
                         elif listType == 'directDomains':
                             value = line
                             if value not in _domains and not (value == '' or value == ' '):
-                                domains.append({ "value": value })
+                                domains.append({ "value": value.split(' ')[0] })
                                 _domains[value] = True
         except Exception as e:
             log("::error title=Domain list error::Error fetching list: " + url)
