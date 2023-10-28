@@ -19,7 +19,7 @@ try:
         #else:
         print(message)
 
-    listsConfig = json.load(open('./lists.json'))
+    listsConfig = json.load(open('./config/lists.json'))
 
     _domains = {}
     domains = []
