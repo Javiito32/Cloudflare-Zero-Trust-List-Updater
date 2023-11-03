@@ -39,4 +39,6 @@ To collaborate with the project, follow these steps:
 
 This project is under AGPL-3.0-only - Checkout [LICENSE](LICENSE) for more detail
 
+This project is not affiliated with or endorsed by Cloudflare, Inc. Cloudflare is a registered trademark of Cloudflare, Inc., and any mention of their services or products is for informational purposes only. Any use of Cloudflare's services or products is subject to their own terms and conditions.
+
 <img src="https://em-content.zobj.net/source/microsoft-teams/363/keyboard_2328-fe0f.png" height="22" /> with <img src="https://em-content.zobj.net/source/microsoft-teams/363/red-heart_2764-fe0f.png" height="22" /> by [Javiito32](https://github.com/Javiito32) <img src="https://em-content.zobj.net/source/microsoft-teams/363/smiling-face-with-smiling-eyes_1f60a.png" height="22" />
