@@ -15,6 +15,7 @@ To use the updater, you must fork this repository and set the following Actions 
 * `API_TOKEN`: Your Cloudflare API key
 * `IDENTIFIER`: Your Cloudflare account ID
 * `SLACK_URL`: A Slack Webhook URL to get notifications
+* `DNS_FQDN`: The DNS FQDN of the list you want to update the lists on
 
 ### Configuration
 
