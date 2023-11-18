@@ -1,5 +1,6 @@
 from api import CloudflareAPI
 from utils import removeNones
+import os
 
 class CloudflareRules:
 
