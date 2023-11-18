@@ -40,7 +40,7 @@ class CloudflareRules:
                 ruleString += f'dns.fqdn in ${id} or '
             rule['traffic'] = ruleString[:-4]
         else:
-            rule['traffic'] = 'dns.fqdn == "de6802c9d73a1127b0b97678d15891ea.399fc00675d5d05b39d50a7c50319b20"'
+            rule['traffic'] = 'dns.fqdn == "' + os.environ.get('DNS_FQDN') + '"'
 
         req = self.cloudflareAPI.put(f'https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/rules/{uuid}', data = rule)
 
