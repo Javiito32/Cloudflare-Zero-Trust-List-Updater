@@ -84,6 +84,7 @@ try:
 
     apiToken = args[1]
     identifier = args[2]
+    dns_fqdn = args[3]
 
     cloudflareAPI = CloudflareAPI(apiToken, identifier)
 
@@ -104,8 +105,10 @@ try:
         else:
             log("::error file=main.py,line=79,title=Api Error::Cloudflare API token verification failed")
 
+
+
     cloudflareLists = CloudflareLists(cloudflareAPI)
-    cloudflareRules = CloudflareRules(cloudflareAPI)
+    cloudflareRules = CloudflareRules(cloudflareAPI, dns_fqdn)
     log("Cloudflare API initialized")
 
 

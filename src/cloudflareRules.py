@@ -4,8 +4,9 @@ import os
 
 class CloudflareRules:
 
-    def __init__(self, cloudflareAPI: CloudflareAPI):
+    def __init__(self, cloudflareAPI: CloudflareAPI, dns_fqdn):
         self.cloudflareAPI = cloudflareAPI
+        self.dns_fqdn = dns_fqdn
         pass
 
     def getRules(self):
@@ -41,7 +42,7 @@ class CloudflareRules:
                 ruleString += f'dns.fqdn in ${id} or '
             rule['traffic'] = ruleString[:-4]
         else:
-            rule['traffic'] = 'dns.fqdn == "' + os.environ.get('DNS_FQDN') + '"'
+            rule['traffic'] = 'dns.fqdn == "' + self.dns_fqdn + '"'
 
         req = self.cloudflareAPI.put(f'https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/rules/{uuid}', data = rule)
 
