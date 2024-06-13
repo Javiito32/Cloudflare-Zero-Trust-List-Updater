@@ -15,7 +15,7 @@ jobs:
     steps:
     - name: Setup Masks
       shell: bash
-      run: echo "Secrets ::add-mask::${{ secrets.API_TOKEN }} - ::add-mask::${{ secrets.IDENTIFIER }} - ::add-mask::${{ secrets.SLACK_URL }} - ${{ secrets.DNS_FQDN }}"
+      run: echo "Secrets ::add-mask::${{ secrets.API_TOKEN }} - ::add-mask::${{ secrets.IDENTIFIER }} - ::add-mask::${{ secrets.SLACK_URL }} - ::add-mask::${{ secrets.DNS_FQDN }}"
 
     - uses: actions/checkout@v3
     - name: Set up Python 3.11
