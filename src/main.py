@@ -152,15 +152,19 @@ try:
     errorLists = []
 
     log("Creating Cloudflare lists")
-    async def createLists(_chunks: list, _tasks: list):
-        session = aiohttp.ClientSession()
-        async with asyncio.TaskGroup() as tg:
-            for chunk in _chunks:
-                task = tg.create_task(cloudflareLists.createList(f'adlist_{_chunks.index(chunk)}', f'Adlist {_chunks.index(chunk)}', chunk, session))
-                _tasks.append((task, _chunks.index(chunk)))
-        await session.close()
+#    async def createLists(_chunks: list, _tasks: list):
+#        session = aiohttp.ClientSession()
+#        async with asyncio.TaskGroup() as tg:
+#            for chunk in _chunks:
+#                task = tg.create_task(cloudflareLists.createList(f'adlist_{_chunks.index(chunk)}', f'Adlist {_chunks.index(chunk)}', chunk, session))
+#                _tasks.append((task, _chunks.index(chunk)))
+#        await session.close()
 
-    asyncio.run(createLists(chunks, tasks))
+#    asyncio.run(createLists(chunks, tasks))
+
+    for chunk in chunks:
+        request = cloudflareLists.createListSync(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)
+        time.sleep(3)
 
     for value in tasks:
         task = value[0]
