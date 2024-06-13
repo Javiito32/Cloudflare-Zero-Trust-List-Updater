@@ -47,6 +47,7 @@ class CloudflareLists:
                 else:
                     return (name, f'Error on requests syntaxt: ' + str(_json))
             else:
+                print(req.status, req.text)
                 return (name, f'CODE [{req.status}] error, request not completed: ' + req.text)
         except Exception as e:
             return (name, f'Error on request: ' + str(e))
