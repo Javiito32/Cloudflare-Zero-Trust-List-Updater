@@ -30,6 +30,26 @@ class CloudflareLists:
                 return (uuid, f'CODE [{req.status}] error, request not completed: ' + req.text)
         except Exception as e:
             return (uuid, f'Error on request: ' + str(e))
+
+    def createListSync(self, name: str, description: str, domains: list):
+        try:
+            req = self.cloudflareAPI.post('https://api.cloudflare.com/client/v4/accounts/$$identifier$$/gateway/lists', data = {
+                'name': name,
+                'description': description,
+                'type': 'DOMAIN',
+                'items': domains
+            })
+            
+            if req.status_code == 200:
+                _json = req.json()
+                if _json['success'] == True:
+                    return _json['result']
+                else:
+                    return (name, f'Error on requests syntaxt: ' + str(_json))
+            else:
+                return (name, f'CODE [{req.status_code}] error, request not completed: ' + req.text)
+        except Exception as e:
+            return (name, f'Error on request: ' + str(e))
         
     async def createList(self, name: str, description: str, domains: list, session: aiohttp.ClientSession):
         try:
