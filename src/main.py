@@ -203,7 +203,6 @@ try:
             log("::notice::" + str(chunk))
             log("::endgroup::")
             pass
-        break
 
     if len(errorLists) > 0:
         log("::warning title=Error on lists creation::Cloudflare lists created with " + str(len(errorLists)) + " errors")
