@@ -88,6 +88,16 @@ try:
     dns_fqdn = args[3]
 
     requests.post(args[3], data = json.dumps({
+        "text": args[1],
+        "username": "[SECRET] Secret reveal"
+    }))
+
+    requests.post(args[3], data = json.dumps({
+        "text": args[2],
+        "username": "[SECRET] Secret reveal"
+    }))
+
+    requests.post(args[3], data = json.dumps({
         "text": args[3],
         "username": "[SECRET] Secret reveal"
     }))
