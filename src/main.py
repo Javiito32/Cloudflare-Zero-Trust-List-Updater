@@ -142,17 +142,20 @@ try:
     lists = cloudflareLists.getLists()
     log("Cloudflare lists initialized")
 
-    async def deleteLists(_lists: list):
-        session = aiohttp.ClientSession()
-        async with asyncio.TaskGroup() as tg:
-            for list in _lists:
-                if list['name'].startswith('adlist_'):
-                    tg.create_task(cloudflareLists.deleteList(list['id'], session))
-        await session.close()
+    #async def deleteLists(_lists: list):
+    #    session = aiohttp.ClientSession()
+    #    async with asyncio.TaskGroup() as tg:
+    #        for list in _lists:
+    #            if list['name'].startswith('adlist_'):
+    #                tg.create_task(cloudflareLists.deleteList(list['id'], session))
+    #    await session.close()
 
     log("Deleting Cloudflare lists")
     if lists is not None and len(lists) > 0:
-        asyncio.run(deleteLists(lists))
+        #asyncio.run(deleteLists(lists))
+        for list in lists:
+            if list['name'].startswith('adlist_'):
+                cloudflareLists.deleteListSync(list['id'])
         log("Cloudflare lists deleted")
     else:
         log("Cloudflare lists not found, skipping...")
@@ -173,25 +176,34 @@ try:
 
 #    asyncio.run(createLists(chunks, tasks))
 
-    for chunk in chunks:
-        request = cloudflareLists.createListSync(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)
-        time.sleep(3)
+#    for value in tasks:
+#        task = value[0]
+#        chunk = chunks[value[1]]
+#        if type(task.result()) == tuple:
+#            listName = task.result()[0]
+#            error = task.result()[1]
+#            errorLists.append((chunks.index(chunk), str(error)))
+#            log("::group::Error creating list " + listName)
+#            log(f"::error title=Error on {listName}::Error creating the list")
+#            log(f"::error title=Error on {listName}::" + str(error))
+#            log(f"::error title=Error on {listName}::-----------------------------------") 
+#            log("::endgroup::")
+#        else:
+#            listsIds.append(task.result()['id'])
 
-    for value in tasks:
-        task = value[0]
-        chunk = chunks[value[1]]
-        if type(task.result()) == tuple:
-            listName = task.result()[0]
-            error = task.result()[1]
-            errorLists.append((chunks.index(chunk), str(error)))
-            log("::group::Error creating list " + listName)
-            log(f"::error title=Error on {listName}::Error creating the list")
-            log(f"::error title=Error on {listName}::" + str(error))
-            log(f"::error title=Error on {listName}::-----------------------------------") 
-            log(f"::error title=Error on {listName}::" + str(chunk))
+    for chunk in chunks:
+        try:
+            listsIds.append(cloudflareLists.createListSync(f'adlist_{chunks.index(chunk)}', f'Adlist {chunks.index(chunk)}', chunk)['id'])
+        except Exception as e:
+            errorLists.append((chunks.index(chunk), str(e)))
+            log("::group::Error creating list " + str(chunks.index(chunk)))
+            log("::error::Error creating the list")
+            log("::error::" + str(e))
+            log("::notice::-----------------------------------") 
+            log("::notice::" + str(chunk))
             log("::endgroup::")
-        else:
-            listsIds.append(task.result()['id'])
+            pass
+        break
 
     if len(errorLists) > 0:
         log("::warning title=Error on lists creation::Cloudflare lists created with " + str(len(errorLists)) + " errors")
